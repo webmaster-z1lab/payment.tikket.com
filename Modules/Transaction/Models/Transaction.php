@@ -46,12 +46,4 @@ class Transaction extends Model
     {
         return $this->embedsOne(Method::class);
     }
-
-    /**
-     * @param $value
-     */
-    public function setCodeAttribute($value)
-    {
-        $this->attributes['code'] = preg_replace('/[^a-zA-Z0-9]+/', '', $value);
-    }
 }

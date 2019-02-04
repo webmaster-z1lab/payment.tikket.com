@@ -131,6 +131,8 @@ class TransactionService
         $request->setInstallment()->withParameters($transaction->payment_method->card->installments,
             number_format($transaction->payment_method->card->parcel / 100.0, 2));
 
+        $request->setToken($transaction->payment_method->card->token);
+
         return $request;
     }
 }

@@ -44,8 +44,8 @@ class TransactionController extends ApiController
         }
 
         try {
-            if (!$this->repository->setCode($transaction, $response->coode))
-                throw new \Exception('Not possible to set the code in the transaction.[' . $transaction->id . ' => ' . $response->coode . ']');
+            if (!$this->repository->setCode($transaction, $response->getCode()))
+                throw new \Exception('Not possible to set the code in the transaction.[' . $transaction->id . ' => ' . $response->getCode() . ']');
 
             if ($transaction->payment_method->type === 'boleto' && !$this->repository->updateBoleto($transaction, $response->paymentLink))
                 throw new \Exception('Not possible to set the boleto in the transaction.[' . $transaction->id . ' => ' . $response->paymentLink . ']');
