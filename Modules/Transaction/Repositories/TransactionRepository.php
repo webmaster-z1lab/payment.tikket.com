@@ -9,6 +9,7 @@
 namespace Modules\Transaction\Repositories;
 
 use Carbon\Carbon;
+use Modules\Notification\Events\StatusChanged;
 use Modules\Transaction\Models\Transaction;
 use Z1lab\JsonApi\Repositories\ApiRepository;
 
@@ -85,10 +86,14 @@ class TransactionRepository extends ApiRepository
     {
         $transaction = $this->getByCode($code);
 
-        return $transaction->update([
+        $return = $transaction->update([
             'status'  => 'paid',
             'paid_at' => Carbon::createFromTimeString($date),
         ]);
+
+        event(new StatusChanged($transaction->order_id, $transaction->status));
+
+        return $return;
     }
 
     /**
@@ -115,6 +120,8 @@ class TransactionRepository extends ApiRepository
             'paid_at' => now(),
         ]);
 
+        event(new StatusChanged($reversed->order_id, $reversed->status));
+
         if ($original['payment_method']['type'] === 'boleto') {
             $method = $reversed->payment_method;
             $method->boleto->update($original['payment_method']['boleto']);
@@ -134,10 +141,14 @@ class TransactionRepository extends ApiRepository
     {
         $transaction = $this->getByCode($code);
 
-        return $transaction->update([
+        $return = $transaction->update([
             'status'     => 'canceled',
             'net_amount' => intval($netAmount * 100),
         ]);
+
+        event(new StatusChanged($transaction->order_id, $transaction->status));
+
+        return $return;
     }
 
     /**
