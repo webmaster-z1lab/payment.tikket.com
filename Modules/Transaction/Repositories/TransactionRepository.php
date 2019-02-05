@@ -32,7 +32,7 @@ class TransactionRepository extends ApiRepository
     public function create(array $data)
     {
         /** @var \Modules\Transaction\Models\Transaction $transaction */
-        $transaction = $this->model->create(array_only($data, ['amount', 'hash', 'ip']));
+        $transaction = $this->model->create(array_only($data, ['amount', 'hash', 'ip', 'order_id']));
 
         $this->createCostumer($transaction, $data['costumer']);
 

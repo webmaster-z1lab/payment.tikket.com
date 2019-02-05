@@ -9,7 +9,7 @@ use Modules\Transaction\Models\Embeds\Method;
 
 class Transaction extends Model
 {
-    protected $fillable = ['status', 'code', 'amount', 'net_amount', 'paid_at', 'hash', 'ip'];
+    protected $fillable = ['status', 'code', 'order_id', 'amount', 'net_amount', 'paid_at', 'hash', 'ip'];
 
     protected $casts = [
         'amount'     => 'integer',

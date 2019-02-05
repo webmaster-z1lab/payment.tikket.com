@@ -24,9 +24,10 @@ class TransactionRequest extends ApiFormRequest
     public function rules()
     {
         return [
-            'hash'   => 'bail|required|string',
-            'ip'     => 'bail|required|ipv4',
-            'amount' => 'bail|required|integer|min:1',
+            'hash'     => 'bail|required|string',
+            'ip'       => 'bail|required|ipv4',
+            'amount'   => 'bail|required|integer|min:1',
+            'order_id' => 'bail|required|string',
 
             'costumer'                 => 'bail|required|array',
             'costumer.user_id'         => 'bail|required|uuid',
