@@ -60,7 +60,7 @@ class TransactionRepository extends ApiRepository
      */
     public function getByCode(string $code)
     {
-        $transaction =  $this->model->where(['code', preg_replace('/[^a-zA-Z0-9]+/', '', $code)])->oldest()->first();
+        $transaction =  $this->model->where('code', $code)->oldest()->first();
 
         if (NULL === $transaction) abort(404);
 
