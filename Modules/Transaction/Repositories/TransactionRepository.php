@@ -56,11 +56,15 @@ class TransactionRepository extends ApiRepository
     /**
      * @param string $code
      *
-     * @return \Modules\Transaction\Models\Transaction|null
+     * @return \Modules\Transaction\Models\Transaction
      */
     public function getByCode(string $code)
     {
-        return $this->model->where(['code', preg_replace('/[^a-zA-Z0-9]+/', '', $code)])->oldest()->first();
+        $transaction =  $this->model->where(['code', preg_replace('/[^a-zA-Z0-9]+/', '', $code)])->oldest()->first();
+
+        if (NULL === $transaction) abort(404);
+
+        return $transaction;
     }
 
     /**
@@ -103,13 +107,13 @@ class TransactionRepository extends ApiRepository
      */
     public function makeChargeback(string $code)
     {
-        $original = optional($this->getByCode($code))->toArray();
+        $original = $this->getByCode($code)->toArray();
 
         if ($original === NULL || empty($original))
             abort(404);
 
         if ($original['status'] !== 'paid')
-            abort(400, 'Transaction was not paid.');
+            abort(404, 'Transaction was not paid.');
 
         if ($this->model->where([['code' => $original['code']], ['status', 'reversed']])->exists())
             return TRUE;
