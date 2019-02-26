@@ -48,8 +48,7 @@
             "Modules\\": "Modules/"
         },
         "classmap": [
-            "database/seeds",
-            "database/factories"
+            "database/seeds"
         ]
     },
     "autoload-dev": {
