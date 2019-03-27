@@ -10,6 +10,13 @@ use PagSeguro\Configuration\Configure;
 use Z1lab\JsonApi\Exceptions\ErrorObject;
 use Z1lab\JsonApi\Http\Controllers\ApiController;
 
+/**
+ * Class TransactionController
+ *
+ * @package Modules\Transaction\Http\Controllers
+ *
+ * @property \Modules\Transaction\Repositories\TransactionRepository repository
+ */
 class TransactionController extends ApiController
 {
     /**
@@ -17,6 +24,12 @@ class TransactionController extends ApiController
      */
     private $service;
 
+    /**
+     * TransactionController constructor.
+     *
+     * @param \Modules\Transaction\Repositories\TransactionRepository $repository
+     * @param \Modules\Transaction\Services\TransactionService        $service
+     */
     public function __construct(TransactionRepository $repository, TransactionService $service)
     {
         parent::__construct($repository, 'Transaction');
@@ -47,8 +60,8 @@ class TransactionController extends ApiController
             if (!$this->repository->setCode($transaction, $response->getCode()))
                 throw new \Exception('Not possible to set the code in the transaction.[' . $transaction->id . ' => ' . $response->getCode() . ']');
 
-            if ($transaction->payment_method->type === 'boleto' && !$this->repository->updateBoleto($transaction, $response->paymentLink))
-                throw new \Exception('Not possible to set the boleto in the transaction.[' . $transaction->id . ' => ' . $response->paymentLink . ']');
+            if ($transaction->payment_method->type === 'boleto' && !$this->repository->updateBoleto($transaction, $response->getPaymentLink()))
+                throw new \Exception('Not possible to set the boleto in the transaction.[' . $transaction->id . ' => ' . $response->getPaymentLink() . ']');
         } catch (\Exception $e) {
             $error = new ErrorObject($e->getMessage(), $e->getCode());
 
@@ -56,5 +69,29 @@ class TransactionController extends ApiController
         }
 
         return $this->makeResource($transaction);
+    }
+
+    /**
+     * @param string $id
+     *
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\Resources\Json\Resource
+     * @throws \Exception
+     */
+    public function destroy(string $id)
+    {
+        $transaction = $this->repository->find($id);
+
+        if ($transaction->status === 'waiting') {
+            $this->service->cancel($transaction->code);
+
+            $this->repository->cancel($transaction->code);
+        } elseif ($transaction->status === 'paid') {
+            $this->service->reverse($transaction->code);
+
+            $this->repository->makeChargeback($transaction->code);
+        } else
+            abort(400, "This transaction can't be canceled.");
+
+        return $this->makeResource($transaction->fresh());
     }
 }

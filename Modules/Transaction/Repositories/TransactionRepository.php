@@ -60,7 +60,7 @@ class TransactionRepository extends ApiRepository
      */
     public function getByCode(string $code)
     {
-        $transaction =  $this->model->where('code', $code)->oldest()->first();
+        $transaction = $this->model->where('code', $code)->oldest()->first();
 
         if (NULL === $transaction) abort(404);
 
@@ -124,7 +124,7 @@ class TransactionRepository extends ApiRepository
             'paid_at' => now(),
         ]);
 
-        event(new StatusChanged($reversed->order_id, $reversed->status));
+        event(new StatusChanged($reversed->order_id, $original->status));
 
         if ($original['payment_method']['type'] === 'boleto') {
             $method = $reversed->payment_method;
@@ -141,14 +141,17 @@ class TransactionRepository extends ApiRepository
      *
      * @return bool
      */
-    public function cancel(string $code, float $netAmount)
+    public function cancel(string $code, float $netAmount = NULL)
     {
         $transaction = $this->getByCode($code);
 
-        $return = $transaction->update([
-            'status'     => 'canceled',
-            'net_amount' => intval($netAmount * 100),
-        ]);
+        if (filled($netAmount))
+            $return = $transaction->update([
+                'status'     => 'canceled',
+                'net_amount' => intval($netAmount * 100),
+            ]);
+        else
+            $return = $transaction->update(['status' => 'canceled']);
 
         event(new StatusChanged($transaction->order_id, $transaction->status));
 
@@ -177,7 +180,7 @@ class TransactionRepository extends ApiRepository
         $transaction->payment_method->boleto->update(['url' => $url]);
         $transaction->payment_method->save();
 
-        return$transaction->save();
+        return $transaction->save();
 
     }
 

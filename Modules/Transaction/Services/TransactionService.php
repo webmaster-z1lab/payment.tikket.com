@@ -8,11 +8,15 @@
 
 namespace Modules\Transaction\Services;
 
-use Modules\Transaction\Models\Transaction;;
+use Modules\Transaction\Models\Transaction;
 
-use PagSeguro\Domains\Item;
+;
+
+use PagSeguro\Configuration\Configure;
 use PagSeguro\Domains\Requests\DirectPayment\Boleto;
 use PagSeguro\Domains\Requests\DirectPayment\CreditCard;
+use PagSeguro\Services\Transactions\Cancel;
+use PagSeguro\Services\Transactions\Refund;
 
 class TransactionService
 {
@@ -32,6 +36,28 @@ class TransactionService
             default:
                 throw new \Exception('Payment method unknown.');
         }
+    }
+
+    /**
+     * @param string $code
+     *
+     * @return \PagSeguro\Parsers\Cancel\Response
+     * @throws \Exception
+     */
+    public function cancel(string $code)
+    {
+        return Cancel::create(Configure::getAccountCredentials(), $code);
+    }
+
+    /**
+     * @param string $code
+     *
+     * @return string
+     * @throws \Exception
+     */
+    public function reverse(string $code)
+    {
+        return Refund::create(Configure::getAccountCredentials(), $code);
     }
 
     /**
