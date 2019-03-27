@@ -19,6 +19,7 @@
         "laravel/tinker": "^1.0",
         "nwidart/laravel-modules": "^4.0",
         "pagseguro/pagseguro-php-sdk": "^6.0",
+        "predis/predis": "^1.1",
         "respect/validation": "^1.1",
         "z1lab/laravel-json-api": "^0.1.1",
         "z1lab/openid-client": "^1.0"

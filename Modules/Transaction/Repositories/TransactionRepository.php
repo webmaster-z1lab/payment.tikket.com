@@ -9,7 +9,7 @@
 namespace Modules\Transaction\Repositories;
 
 use Carbon\Carbon;
-use Modules\Notification\Events\StatusChanged;
+use Modules\Notification\Jobs\ChangeOrderStatus;
 use Modules\Transaction\Models\Transaction;
 use Z1lab\JsonApi\Repositories\ApiRepository;
 
@@ -95,7 +95,7 @@ class TransactionRepository extends ApiRepository
             'paid_at' => Carbon::createFromTimeString($date),
         ]);
 
-        event(new StatusChanged($transaction->order_id, $transaction->status));
+        ChangeOrderStatus::dispatchNow($transaction);
 
         return $return;
     }
@@ -124,7 +124,7 @@ class TransactionRepository extends ApiRepository
             'paid_at' => now(),
         ]);
 
-        event(new StatusChanged($reversed->order_id, $original->status));
+        ChangeOrderStatus::dispatchNow($original);
 
         if ($original['payment_method']['type'] === 'boleto') {
             $method = $reversed->payment_method;
@@ -153,7 +153,7 @@ class TransactionRepository extends ApiRepository
         else
             $return = $transaction->update(['status' => 'canceled']);
 
-        event(new StatusChanged($transaction->order_id, $transaction->status));
+        ChangeOrderStatus::dispatchNow($transaction);
 
         return $return;
     }
