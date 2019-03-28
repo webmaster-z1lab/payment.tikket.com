@@ -95,7 +95,7 @@ class TransactionRepository extends ApiRepository
             'paid_at' => Carbon::createFromTimeString($date),
         ]);
 
-        ChangeOrderStatus::dispatchNow($transaction);
+        ChangeOrderStatus::dispatch($transaction);
 
         return $return;
     }
@@ -124,7 +124,7 @@ class TransactionRepository extends ApiRepository
             'paid_at' => now(),
         ]);
 
-        ChangeOrderStatus::dispatchNow($original);
+        ChangeOrderStatus::dispatch($original);
 
         if ($original['payment_method']['type'] === 'boleto') {
             $method = $reversed->payment_method;
@@ -153,7 +153,7 @@ class TransactionRepository extends ApiRepository
         else
             $return = $transaction->update(['status' => 'canceled']);
 
-        ChangeOrderStatus::dispatchNow($transaction);
+        ChangeOrderStatus::dispatch($transaction);
 
         return $return;
     }
