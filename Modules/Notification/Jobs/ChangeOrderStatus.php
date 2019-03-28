@@ -43,9 +43,9 @@ class ChangeOrderStatus implements ShouldQueue
         if (!$credential)
             throw new \Exception('Not possible to generate the client credential.');
 
-        $client = new Client(['base_uri' => Str::finish(env('API_ENDPOINT'), '/') . 'api/' . env('API_VERSION')]);
+        $client = new Client(['base_uri' => env('API_ENDPOINT')]);
 
-        $client->patch('orders/' . $this->transaction->order_id . '/status', [
+        $client->patch('api/' . env('API_VERSION') . '/orders/' . $this->transaction->order_id . '/status', [
             'headers' => [
                 'Authorization' => "Bearer $credential",
             ],
