@@ -41,7 +41,7 @@
         <div class="container d-lg-flex align-items-lg-center min-height-lg-100vh space-bottom-2 space-top-4 space-bottom-lg-3 space-lg-0">
             <div class="w-lg-80 w-xl-70 mt-lg-9">
                 <div class="mb-6">
-                    <h1 class="h2 text-white font-weight-normal"><i class="fas fa-ticket-alt mr-1"></i>PAYMENT API Tikket.com.br <br><small>Um projeto Z1lab</small></h1>
+                    <h1 class="text-white font-weight-normal"><i class="fas fa-ticket-alt mr-1"></i>PAYMENT API Tikket.com.br <br><small>Um projeto Z1lab</small></h1>
                     <p class="text-white-70">Essa é uma extensão do site <a class="text-white font-weight-bold" href="//tikket.com.br">tikket.com.br</a> que controla as
                         funcionalidades de pagamento e garante as compras realizadas no site.</p>
                     <p class="text-white-70">Assim como todo o projeto essa é uma solução desenvolvida e matida pela <a class="text-white font-weight-bold" href="//z1lab.com.br">Z1lab</a>.
