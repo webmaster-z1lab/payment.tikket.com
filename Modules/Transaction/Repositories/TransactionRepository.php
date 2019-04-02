@@ -118,13 +118,15 @@ class TransactionRepository extends ApiRepository
         if ($this->model->where([['code' => $original['code']], ['status', 'reversed']])->exists())
             return TRUE;
 
+        $original['type'] = $original['payment_method']['type'];
+
         $reversed = $this->create($original);
         $reversed->update([
-            'status'  => 'paid',
+            'status'  => 'reversed',
             'paid_at' => now(),
         ]);
 
-        ChangeOrderStatus::dispatch($original);
+        ChangeOrderStatus::dispatch($reversed);
 
         if ($original['payment_method']['type'] === 'boleto') {
             $method = $reversed->payment_method;
