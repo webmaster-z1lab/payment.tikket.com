@@ -64,6 +64,7 @@ class Kernel extends HttpKernel
         'api.v'         => \Juampi92\APIResources\Middleware\APIversion::class,
         'roles'         => \Z1lab\OpenID\Http\Middleware\CheckRoles::class,
         'role'          => \Z1lab\OpenID\Http\Middleware\CheckForAnyRole::class,
+        'auth.m2m'      => \Z1lab\OpenID\Http\Middleware\CheckClientCredentials::class,
     ];
 
     /**

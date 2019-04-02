@@ -34,6 +34,8 @@ class TransactionController extends ApiController
     {
         parent::__construct($repository, 'Transaction');
         $this->service = $service;
+
+        $this->middleware('auth.m2m');
     }
 
     /**
