@@ -27,7 +27,7 @@ class ChangeOrderStatus implements ShouldQueue
      */
     public function __construct(Transaction $transaction)
     {
-        $this->transaction = $transaction;
+        $this->transaction = $transaction->fresh();
     }
 
     /**
