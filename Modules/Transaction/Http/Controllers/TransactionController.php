@@ -50,25 +50,13 @@ class TransactionController extends ApiController
 
         $request = $this->service->create($transaction);
 
-        try {
-            $response = $request->register(Configure::getAccountCredentials());
-        } catch (\Exception $e) {
-            $error = new ErrorObject($e->getMessage(), $e->getCode(), $e->getTrace());
+        $response = $request->register(Configure::getAccountCredentials());
 
-            throw new HttpResponseException(response()->json($error->toArray(), $error->getCode()));
-        }
+        if (!$this->repository->setCode($transaction, $response->getCode()))
+           abort(400,'Not possible to set the code in the transaction.[' . $transaction->id . ' => ' . $response->getCode() . ']');
 
-        try {
-            if (!$this->repository->setCode($transaction, $response->getCode()))
-                throw new \Exception('Not possible to set the code in the transaction.[' . $transaction->id . ' => ' . $response->getCode() . ']');
-
-            if ($transaction->payment_method->type === 'boleto' && !$this->repository->updateBoleto($transaction, $response->getPaymentLink()))
-                throw new \Exception('Not possible to set the boleto in the transaction.[' . $transaction->id . ' => ' . $response->getPaymentLink() . ']');
-        } catch (\Exception $e) {
-            $error = new ErrorObject($e->getMessage(), $e->getCode());
-
-            throw new HttpResponseException(response()->json($error->toArray(), $error->getCode()));
-        }
+        if ($transaction->payment_method->type === 'boleto' && !$this->repository->updateBoleto($transaction, $response->getPaymentLink()))
+            abort(400,'Not possible to set the boleto in the transaction.[' . $transaction->id . ' => ' . $response->getPaymentLink() . ']');
 
         return $this->makeResource($transaction);
     }
