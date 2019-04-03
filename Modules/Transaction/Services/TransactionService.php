@@ -34,7 +34,8 @@ class TransactionService
             case 'credit_card':
                 return $this->createCreditCard($transaction);
             default:
-                throw new \Exception('Payment method unknown.');
+                abort(400, 'Payment method unknown.');
+                return NULL;
         }
     }
 

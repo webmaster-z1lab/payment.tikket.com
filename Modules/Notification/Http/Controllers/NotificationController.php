@@ -36,17 +36,17 @@ class NotificationController extends Controller
     {
 
         if (!Xhr::hasPost())
-            throw new \Exception('Notification not found.', 404);
+            abort(404, 'Notification not found.');
 
         switch (Xhr::getInputType()) {
             case Notification::PRE_APPROVAL:
-                throw new \Exception('Notification type not suported.');
+                abort(400,'Notification type not suported.');
                 break;
             case Notification::TRANSACTION:
                 $this->transaction();
                 break;
             default:
-                throw new \Exception('Notification type unknown.');
+                abort( 400, 'Notification type unknown.');
         }
 
         return response()->json([], Response::HTTP_NO_CONTENT);
@@ -80,7 +80,7 @@ class NotificationController extends Controller
                 $this->repository->cancel($response->getCode(), $response->getNetAmount());
                 break;
             default:
-                throw new \Exception('Unknown status.');
+                abort(400,'Unknown status.');
         }
 
         return response()->json([], Response::HTTP_NO_CONTENT);

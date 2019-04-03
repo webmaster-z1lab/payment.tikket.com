@@ -19,16 +19,11 @@ class SessionController extends Controller
 
     /**
      * @return \Illuminate\Http\JsonResponse
+     * @throws \Exception
      */
     public function get()
     {
-        try {
-            $response = Session::create(Configure::getAccountCredentials());
-        } catch (\Exception $e) {
-            $error = new ErrorObject($e->getMessage(), $e->getCode());
-
-            throw new HttpResponseException(response()->json($error->toArray(), $error->getCode()));
-        }
+        $response = Session::create(Configure::getAccountCredentials());
 
         return response()->json(['session' => $response->getResult()]);
     }
