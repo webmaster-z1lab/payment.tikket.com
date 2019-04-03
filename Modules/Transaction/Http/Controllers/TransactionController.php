@@ -2,12 +2,10 @@
 
 namespace Modules\Transaction\Http\Controllers;
 
-use Illuminate\Http\Exceptions\HttpResponseException;
 use Modules\Transaction\Http\Requests\TransactionRequest;
 use Modules\Transaction\Repositories\TransactionRepository;
 use Modules\Transaction\Services\TransactionService;
 use PagSeguro\Configuration\Configure;
-use Z1lab\JsonApi\Exceptions\ErrorObject;
 use Z1lab\JsonApi\Http\Controllers\ApiController;
 
 /**
@@ -27,8 +25,8 @@ class TransactionController extends ApiController
     /**
      * TransactionController constructor.
      *
-     * @param \Modules\Transaction\Repositories\TransactionRepository $repository
-     * @param \Modules\Transaction\Services\TransactionService        $service
+     * @param  \Modules\Transaction\Repositories\TransactionRepository  $repository
+     * @param  \Modules\Transaction\Services\TransactionService  $service
      */
     public function __construct(TransactionRepository $repository, TransactionService $service)
     {
@@ -39,7 +37,7 @@ class TransactionController extends ApiController
     }
 
     /**
-     * @param \Modules\Transaction\Http\Requests\TransactionRequest $request
+     * @param  \Modules\Transaction\Http\Requests\TransactionRequest  $request
      *
      * @return \Illuminate\Http\Resources\Json\Resource
      * @throws \Exception
@@ -52,17 +50,19 @@ class TransactionController extends ApiController
 
         $response = $request->register(Configure::getAccountCredentials());
 
-        if (!$this->repository->setCode($transaction, $response->getCode()))
-           abort(400,'Not possible to set the code in the transaction.[' . $transaction->id . ' => ' . $response->getCode() . ']');
+        if (!$this->repository->setCode($transaction, $response->getCode())) {
+            abort(400, 'Not possible to set the code in the transaction.['.$transaction->id.' => '.$response->getCode().']');
+        }
 
-        if ($transaction->payment_method->type === 'boleto' && !$this->repository->updateBoleto($transaction, $response->getPaymentLink()))
-            abort(400,'Not possible to set the boleto in the transaction.[' . $transaction->id . ' => ' . $response->getPaymentLink() . ']');
+        if ($transaction->payment_method->type === 'boleto' && !$this->repository->updateBoleto($transaction, $response->getPaymentLink())) {
+            abort(400, 'Not possible to set the boleto in the transaction.['.$transaction->id.' => '.$response->getPaymentLink().']');
+        }
 
         return $this->makeResource($transaction);
     }
 
     /**
-     * @param string $id
+     * @param  string  $id
      *
      * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\Resources\Json\Resource
      * @throws \Exception
@@ -79,8 +79,9 @@ class TransactionController extends ApiController
             $this->service->reverse($transaction->code);
 
             $this->repository->makeChargeback($transaction->code);
-        } else
+        } else {
             abort(400, "This transaction can't be canceled.");
+        }
 
         return $this->makeResource($transaction->fresh());
     }

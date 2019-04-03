@@ -2,10 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Exceptions\HttpResponseException;
 use PagSeguro\Configuration\Configure;
 use PagSeguro\Services\Session;
-use Z1lab\JsonApi\Exceptions\ErrorObject;
 
 class SessionController extends Controller
 {

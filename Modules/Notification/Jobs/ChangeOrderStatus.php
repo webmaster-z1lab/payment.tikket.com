@@ -4,11 +4,10 @@ namespace Modules\Notification\Jobs;
 
 use GuzzleHttp\Client;
 use Illuminate\Bus\Queueable;
-use Illuminate\Queue\SerializesModels;
-use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Support\Str;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
 use Modules\Transaction\Models\Transaction;
 
 class ChangeOrderStatus implements ShouldQueue
@@ -23,7 +22,7 @@ class ChangeOrderStatus implements ShouldQueue
     /**
      * Create a new job instance.
      *
-     * @param \Modules\Transaction\Models\Transaction $transaction
+     * @param  \Modules\Transaction\Models\Transaction  $transaction
      */
     public function __construct(Transaction $transaction)
     {
@@ -40,12 +39,13 @@ class ChangeOrderStatus implements ShouldQueue
     {
         $credential = \OpenID::getClientToken();
 
-        if (!$credential)
+        if (!$credential) {
             throw new \Exception('Not possible to generate the client credential.');
+        }
 
         $client = new Client(['base_uri' => env('API_ENDPOINT')]);
 
-        $client->patch('api/' . env('API_VERSION') . '/orders/' . $this->transaction->order_id . '/status', [
+        $client->patch('api/'.env('API_VERSION').'/orders/'.$this->transaction->order_id.'/status', [
             'headers' => [
                 'Authorization' => "Bearer $credential",
             ],
