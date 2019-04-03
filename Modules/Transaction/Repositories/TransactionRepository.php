@@ -18,7 +18,7 @@ class TransactionRepository extends ApiRepository
     /**
      * TransactionRepository constructor.
      *
-     * @param \Modules\Transaction\Models\Transaction $model
+     * @param  \Modules\Transaction\Models\Transaction  $model
      */
     public function __construct(Transaction $model)
     {
@@ -26,9 +26,9 @@ class TransactionRepository extends ApiRepository
     }
 
     /**
-     * @param array $data
+     * @param  array  $data
      *
-     * @return \Illuminate\Database\Eloquent\Model|mixed|\Z1lab\JsonApi\Repositories\ApiRepository
+     * @return \Modules\Transaction\Models\Transaction
      */
     public function create(array $data)
     {
@@ -40,10 +40,11 @@ class TransactionRepository extends ApiRepository
         $transaction->items()->createMany($data['items']);
 
         $method = $transaction->payment_method()->create(['type' => $data['type']]);
-        if ($data['type'] === 'boleto')
+        if ($data['type'] === 'boleto') {
             $method->boleto()->create();
-        else
+        } else {
             $this->createCard($transaction, $data['card']);
+        }
 
         $transaction->save();
 
@@ -54,7 +55,47 @@ class TransactionRepository extends ApiRepository
     }
 
     /**
-     * @param string $code
+     * @param  \Modules\Transaction\Models\Transaction  $original
+     *
+     * @return \Modules\Transaction\Models\Transaction
+     */
+    private function createReversed(Transaction $original)
+    {
+        /** @var \Modules\Transaction\Models\Transaction $transaction */
+        $transaction = $this->model->create([
+            'amount'     => $original->amount,
+            'net_amount' => $original->net_amount,
+            'hash'       => $original->hash,
+            'ip'         => $original->ip,
+            'order_id'   => $original->order_id,
+            'status'     => 'reversed',
+            'paid_at'    => now(),
+            'code'       => $original->code,
+        ]);
+
+        $this->createCostumer($transaction, $original->costumer->toArray());
+
+        foreach ($original->items as $item) {
+            $transaction->items()->create($item->toArray());
+        }
+
+        $method = $transaction->payment_method()->create(['type' => $original->payment_method->type]);
+        if ($method->type === 'boleto') {
+            $method->boleto()->create(['url' => $original->payment_method->boleto->url]);
+        } else {
+            $this->createCard($transaction, $original->payment_method->card->toArray());
+        }
+
+        $transaction->save();
+
+        $this->setCacheKey($transaction->id);
+        $this->remember($transaction);
+
+        return $transaction;
+    }
+
+    /**
+     * @param  string  $code
      *
      * @return \Modules\Transaction\Models\Transaction
      */
@@ -62,14 +103,16 @@ class TransactionRepository extends ApiRepository
     {
         $transaction = $this->model->where('code', $code)->oldest()->first();
 
-        if (NULL === $transaction) abort(404);
+        if (NULL === $transaction) {
+            abort(404);
+        }
 
         return $transaction;
     }
 
     /**
-     * @param string $code
-     * @param float  $netAmount
+     * @param  string  $code
+     * @param  float  $netAmount
      *
      * @return bool
      */
@@ -81,8 +124,8 @@ class TransactionRepository extends ApiRepository
     }
 
     /**
-     * @param string $code
-     * @param string $date
+     * @param  string  $code
+     * @param  string  $date
      *
      * @return bool
      */
@@ -101,45 +144,32 @@ class TransactionRepository extends ApiRepository
     }
 
     /**
-     * @param string $code
+     * @param  string  $code
      *
      * @return bool
      */
     public function makeChargeback(string $code)
     {
-        $original = $this->getByCode($code)->toArray();
+        $original = $this->getByCode($code);
 
-        if ($original === NULL || empty($original))
-            abort(404);
+        if ($original->status !== 'paid') {
+            abort(400, 'Transaction was not paid.');
+        }
 
-        if ($original['status'] !== 'paid')
-            abort(404, 'Transaction was not paid.');
-
-        if ($this->model->where([['code' => $original['code']], ['status', 'reversed']])->exists())
+        if ($this->model->where([['code' => $original->code], ['status', 'reversed']])->exists()) {
             return TRUE;
+        }
 
-        $original['type'] = $original['payment_method']['type'];
-
-        $reversed = $this->create($original);
-        $reversed->update([
-            'status'  => 'reversed',
-            'paid_at' => now(),
-        ]);
+        $reversed = $this->createReversed($original);
 
         ChangeOrderStatus::dispatch($reversed);
 
-        if ($original['payment_method']['type'] === 'boleto') {
-            $method = $reversed->payment_method;
-            $method->boleto->update($original['payment_method']['boleto']);
-            $method->save();
-        }
-
-        return $reversed->save();
+        return TRUE;
     }
 
     /**
-     * @param string $code
-     * @param float  $netAmount
+     * @param  string  $code
+     * @param  float  $netAmount
      *
      * @return bool
      */
@@ -147,13 +177,14 @@ class TransactionRepository extends ApiRepository
     {
         $transaction = $this->getByCode($code);
 
-        if (filled($netAmount))
+        if (filled($netAmount)) {
             $return = $transaction->update([
                 'status'     => 'canceled',
                 'net_amount' => intval($netAmount * 100),
             ]);
-        else
+        } else {
             $return = $transaction->update(['status' => 'canceled']);
+        }
 
         ChangeOrderStatus::dispatch($transaction);
 
@@ -161,8 +192,8 @@ class TransactionRepository extends ApiRepository
     }
 
     /**
-     * @param \Modules\Transaction\Models\Transaction $transaction
-     * @param string                                  $code
+     * @param  \Modules\Transaction\Models\Transaction  $transaction
+     * @param  string  $code
      *
      * @return bool
      */
@@ -172,8 +203,8 @@ class TransactionRepository extends ApiRepository
     }
 
     /**
-     * @param \Modules\Transaction\Models\Transaction $transaction
-     * @param string                                  $url
+     * @param  \Modules\Transaction\Models\Transaction  $transaction
+     * @param  string  $url
      *
      * @return bool
      */
@@ -187,8 +218,8 @@ class TransactionRepository extends ApiRepository
     }
 
     /**
-     * @param \Modules\Transaction\Models\Transaction $transaction
-     * @param array                                   $data
+     * @param  \Modules\Transaction\Models\Transaction  $transaction
+     * @param  array  $data
      */
     private function createCostumer(Transaction &$transaction, array $data)
     {
@@ -198,8 +229,8 @@ class TransactionRepository extends ApiRepository
     }
 
     /**
-     * @param \Modules\Transaction\Models\Transaction $transaction
-     * @param array                                   $data
+     * @param  \Modules\Transaction\Models\Transaction  $transaction
+     * @param  array  $data
      */
     private function createCard(Transaction &$transaction, array $data)
     {
