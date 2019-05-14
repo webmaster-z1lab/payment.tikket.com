@@ -165,6 +165,7 @@ return [
         /*
          * Package Service Providers...
          */
+        Bugsnag\BugsnagLaravel\BugsnagServiceProvider::class,
         Optimus\Heimdal\Provider\LaravelServiceProvider::class,
 
         /*
