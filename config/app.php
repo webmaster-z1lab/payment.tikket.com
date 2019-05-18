@@ -134,6 +134,26 @@ return [
     |
     */
 
+    /*
+    |--------------------------------------------------------------------------
+    | Domains
+    |--------------------------------------------------------------------------
+    */
+
+    'domains' => [
+        'api'     => env('API_ENDPOINT', 'http://127.0.0.2:8000'),
+        'oauth'   => env('AUTH_SERVER', 'http://127.0.0.3:8000'),
+        'payment' => env('API_PAYMENT', 'http://127.0.0.4:8000'),
+        'admin'   => env('ADMIN_SITE', 'http://127.0.0.5:8000'),
+    ],
+
+    'api_version' => [
+        'core'  => env('API_VERSION', 'v1'),
+        'oauth' => env('AUTH_SERVER_VERSION', 'v1'),
+    ],
+
+    'cdn' => env('AWS_CDN_ENDPOINT', 'https://d35c048n9fix3e.cloudfront.net'),
+
     'providers' => [
 
         /*
