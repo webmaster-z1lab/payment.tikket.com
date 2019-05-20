@@ -13,6 +13,7 @@
         "ext-json": "*",
         "arcanedev/log-viewer": "^4.6",
         "aws/aws-sdk-php": "^3.87",
+        "bugsnag/bugsnag-laravel": "^2.0",
         "fideloper/proxy": "^4.0",
         "jenssegers/mongodb": "^3.4",
         "laravel/framework": "5.7.*",
