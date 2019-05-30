@@ -3,7 +3,7 @@
 namespace Modules\Transaction\Models;
 
 use Jenssegers\Mongodb\Eloquent\Model;
-use Modules\Transaction\Models\Embeds\Costumer;
+use Modules\Transaction\Models\Embeds\Customer;
 use Modules\Transaction\Models\Embeds\Item;
 use Modules\Transaction\Models\Embeds\Method;
 
@@ -26,9 +26,9 @@ class Transaction extends Model
     /**
      * @return \Jenssegers\Mongodb\Relations\EmbedsOne
      */
-    public function costumer()
+    public function customer()
     {
-        return $this->embedsOne(Costumer::class);
+        return $this->embedsOne(Customer::class);
     }
 
     /**

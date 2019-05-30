@@ -5,7 +5,6 @@ namespace Modules\Transaction\Http\Controllers;
 use Modules\Transaction\Http\Requests\TransactionRequest;
 use Modules\Transaction\Repositories\TransactionRepository;
 use Modules\Transaction\Services\TransactionService;
-use PagSeguro\Configuration\Configure;
 use Z1lab\JsonApi\Http\Controllers\ApiController;
 
 /**
@@ -46,19 +45,9 @@ class TransactionController extends ApiController
     {
         $transaction = $this->repository->create($request->validated());
 
-        $request = $this->service->create($transaction);
+        $transaction = $this->service->create($transaction);
 
-        $response = $request->register(Configure::getAccountCredentials());
-
-        if (!$this->repository->setCode($transaction, $response->getCode())) {
-            abort(400, 'Not possible to set the code in the transaction.['.$transaction->id.' => '.$response->getCode().']');
-        }
-
-        if ($transaction->payment_method->type === 'boleto' && !$this->repository->updateBoleto($transaction, $response->getPaymentLink())) {
-            abort(400, 'Not possible to set the boleto in the transaction.['.$transaction->id.' => '.$response->getPaymentLink().']');
-        }
-
-        return $this->makeResource($transaction);
+        return $this->makeResource($transaction->fresh());
     }
 
     /**

@@ -4,7 +4,7 @@ namespace Modules\Transaction\Models\Embeds;
 
 use Jenssegers\Mongodb\Eloquent\Model;
 
-class Costumer extends Model
+class Customer extends Model
 {
     public $timestamps = FALSE;
 
@@ -16,5 +16,13 @@ class Costumer extends Model
     public function phone()
     {
         return $this->embedsOne(Phone::class);
+    }
+
+    /**
+     * @return \Jenssegers\Mongodb\Relations\EmbedsOne
+     */
+    public function address()
+    {
+        return $this->embedsOne(Address::class);
     }
 }

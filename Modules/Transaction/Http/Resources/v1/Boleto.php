@@ -4,7 +4,8 @@ namespace Modules\Transaction\Http\Resources\v1;
 
 use Illuminate\Http\Resources\Json\Resource;
 
-class Method extends Resource
+
+class Boleto extends Resource
 {
     /**
      * Transform the resource into an array.
@@ -16,10 +17,10 @@ class Method extends Resource
     public function toArray($request)
     {
         return [
-            'id'     => $this->id,
-            'type'   => $this->type,
-            'card'   => $this->when($this->type !== 'boleto', api_resource('Card')->make($this->card)),
-            'boleto' => $this->when($this->type === 'boleto', api_resource('Boleto')->make($this->boleto)),
+            'id'       => $this->id,
+            'url'      => $this->url,
+            'due_date' => $this->due_date->toW3cString(),
+            'barcode'  => $this->barcode,
         ];
     }
 }

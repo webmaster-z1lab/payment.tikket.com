@@ -4,7 +4,7 @@ namespace Modules\Transaction\Http\Resources\v1;
 
 use Illuminate\Http\Resources\Json\Resource;
 
-class Costumer extends Resource
+class Customer extends Resource
 {
     /**
      * Transform the resource into an array.

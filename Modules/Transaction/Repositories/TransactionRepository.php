@@ -11,18 +11,26 @@ namespace Modules\Transaction\Repositories;
 use Carbon\Carbon;
 use Modules\Notification\Jobs\ChangeOrderStatus;
 use Modules\Transaction\Models\Transaction;
+use Modules\Transaction\Services\WorkingDayService;
 use Z1lab\JsonApi\Repositories\ApiRepository;
 
 class TransactionRepository extends ApiRepository
 {
     /**
+     * @var \Modules\Transaction\Services\WorkingDayService
+     */
+    private $service;
+
+    /**
      * TransactionRepository constructor.
      *
      * @param  \Modules\Transaction\Models\Transaction  $model
+     * @param  \Modules\Transaction\Services\WorkingDayService  $service
      */
-    public function __construct(Transaction $model)
+    public function __construct(Transaction $model, WorkingDayService $service)
     {
         parent::__construct($model, 'transaction');
+        $this->service = $service;
     }
 
     /**
@@ -35,13 +43,14 @@ class TransactionRepository extends ApiRepository
         /** @var \Modules\Transaction\Models\Transaction $transaction */
         $transaction = $this->model->create(array_only($data, ['amount', 'hash', 'ip', 'order_id']));
 
-        $this->createCostumer($transaction, $data['costumer']);
+        $this->createCustomer($transaction, $data['customer'], $data['type'] === 'boleto');
 
         $transaction->items()->createMany($data['items']);
 
         $method = $transaction->payment_method()->create(['type' => $data['type']]);
         if ($data['type'] === 'boleto') {
-            $method->boleto()->create();
+            $due_date = $this->service->nextWorkingDay(today());
+            $method->boleto()->create(compact('due_date'));
         } else {
             $this->createCard($transaction, $data['card']);
         }
@@ -73,7 +82,7 @@ class TransactionRepository extends ApiRepository
             'code'       => $original->code,
         ]);
 
-        $this->createCostumer($transaction, $original->costumer->toArray());
+        $this->createCustomer($transaction, $original->customer->toArray(), $original->payment_method->type === 'boleto');
 
         foreach ($original->items as $item) {
             $transaction->items()->create($item->toArray());
@@ -81,7 +90,11 @@ class TransactionRepository extends ApiRepository
 
         $method = $transaction->payment_method()->create(['type' => $original->payment_method->type]);
         if ($method->type === 'boleto') {
-            $method->boleto()->create(['url' => $original->payment_method->boleto->url]);
+            $method->boleto()->create([
+                'url'      => $original->payment_method->boleto->url,
+                'due_date' => $original->payment_method->boleto->due_date,
+                'barcode'  => $original->payment_method->boleto->barcode,
+            ]);
         } else {
             $this->createCard($transaction, $original->payment_method->card->toArray());
         }
@@ -205,12 +218,13 @@ class TransactionRepository extends ApiRepository
     /**
      * @param  \Modules\Transaction\Models\Transaction  $transaction
      * @param  string  $url
+     * @param  string  $barcode
      *
      * @return bool
      */
-    public function updateBoleto(Transaction &$transaction, string $url)
+    public function updateBoleto(Transaction &$transaction, string $url, string $barcode)
     {
-        $transaction->payment_method->boleto->update(['url' => $url]);
+        $transaction->payment_method->boleto->update(compact('url', 'barcode'));
         $transaction->payment_method->save();
 
         return $transaction->save();
@@ -218,14 +232,29 @@ class TransactionRepository extends ApiRepository
     }
 
     /**
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getExpiredBoletos()
+    {
+        return $this->model->where('payment_method.type', 'boleto')
+            ->where('status', 'waiting')
+            ->where('payment_method.boleto.due_date', '<=', $this->service->previousWorkingDay(today()))
+            ->get();
+    }
+
+    /**
      * @param  \Modules\Transaction\Models\Transaction  $transaction
      * @param  array  $data
+     * @param  bool  $is_boleto
      */
-    private function createCostumer(Transaction &$transaction, array $data)
+    private function createCustomer(Transaction &$transaction, array $data, bool $is_boleto)
     {
-        $costumer = $transaction->costumer()->create(array_except($data, ['phone']));
-        $costumer->phone()->create($data['phone']);
-        $costumer->save();
+        $customer = $transaction->customer()->create(array_except($data, ['phone', 'address']));
+        if ($is_boleto) {
+            $customer->address()->create($data['address']);
+        }
+        $customer->phone()->create($data['phone']);
+        $customer->save();
     }
 
     /**

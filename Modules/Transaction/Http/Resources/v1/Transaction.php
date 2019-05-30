@@ -26,7 +26,7 @@ class Transaction extends Resource
                 'paid_at'        => optional($this->paid_at)->toW3cString(),
                 'hash'           => $this->hash,
                 'ip'             => $this->ip,
-                'costumer'       => api_resource('Costumer')->make($this->costumer),
+                'customer'       => api_resource('Customer')->make($this->customer),
                 'items'          => api_resource('Item')->collection($this->items),
                 'payment_method' => api_resource('Method')->make($this->payment_method),
             ],

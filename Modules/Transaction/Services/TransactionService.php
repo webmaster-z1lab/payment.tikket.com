@@ -8,12 +8,10 @@
 
 namespace Modules\Transaction\Services;
 
+use GuzzleHttp\Client;
 use Modules\Transaction\Models\Transaction;
-
-;
-
+use Modules\Transaction\Repositories\TransactionRepository;
 use PagSeguro\Configuration\Configure;
-use PagSeguro\Domains\Requests\DirectPayment\Boleto;
 use PagSeguro\Domains\Requests\DirectPayment\CreditCard;
 use PagSeguro\Services\Transactions\Cancel;
 use PagSeguro\Services\Transactions\Refund;
@@ -21,9 +19,24 @@ use PagSeguro\Services\Transactions\Refund;
 class TransactionService
 {
     /**
+     * @var \Modules\Transaction\Repositories\TransactionRepository
+     */
+    private $repository;
+
+    /**
+     * TransactionService constructor.
+     *
+     * @param  \Modules\Transaction\Repositories\TransactionRepository  $repository
+     */
+    public function __construct(TransactionRepository $repository)
+    {
+        $this->repository = $repository;
+    }
+
+    /**
      * @param \Modules\Transaction\Models\Transaction $transaction
      *
-     * @return \PagSeguro\Domains\Requests\DirectPayment\Boleto|\PagSeguro\Domains\Requests\DirectPayment\CreditCard
+     * @return \Modules\Transaction\Models\Transaction|null
      * @throws \Exception
      */
     public function create(Transaction $transaction)
@@ -47,7 +60,7 @@ class TransactionService
      */
     public function cancel(string $code)
     {
-        return Cancel::create(Configure::getAccountCredentials(), $code);
+        return Cancel::create(Configure::getApplicationCredentials(), $code);
     }
 
     /**
@@ -58,53 +71,80 @@ class TransactionService
      */
     public function reverse(string $code)
     {
-        return Refund::create(Configure::getAccountCredentials(), $code);
+        return Refund::create(Configure::getApplicationCredentials(), $code);
     }
 
     /**
-     * @param \Modules\Transaction\Models\Transaction $transaction
+     * @param  \Modules\Transaction\Models\Transaction  $transaction
      *
-     * @return \PagSeguro\Domains\Requests\DirectPayment\Boleto
+     * @return \Modules\Transaction\Models\Transaction
      */
     private function createBoleto(Transaction $transaction)
     {
-        $request = new Boleto();
+//        if (Configure::getEnvironment()->getEnvironment() === 'production') {
+            $url = 'https://ws.pagseguro.uol.com.br/';
+//        } else {
+//            $url = 'https://ws.sandbox.pagseguro.uol.com.br/';
+//        }
 
-        $request->setMode('default');
+        $client = new Client([
+            'base_uri' => $url,
+            'headers'  => ['Content-Type' => 'application/json;charset=ISO-8859-1', 'Accept' => 'application/json;charset=ISO-8859-1'],
+            'query'    => ['appID' => Configure::getApplicationCredentials()->getAppId(), 'appKey' => Configure::getApplicationCredentials()->getAppKey()],
+        ]);
 
-        $request->setCurrency('BRL');
+        $response = $client->post('recurring-payment/boletos',
+            [
+                'json' => [
+                    'reference'        => $transaction->id,
+                    'firstDueDate'     => $transaction->payment_method->boleto->due_date->format('Y-m-d'),
+                    'numberOfPayments' => 1,
+                    'periodicity'      => 'monthly',
+                    'instructions'     => 'Não receber após o vencimento.',
+                    'description'      => 'teste 2',
+                    'amount'           => number_format($transaction->amount / 100.0, 2),
+                    'customer'         => [
+                        'document' => [
+                            'type'  => 'CPF',
+                            'value' => $transaction->customer->document,
+                        ],
+                        'name'     => $transaction->customer->name,
+                        'email'    => $transaction->customer->email,
+                        'phone'    => [
+                            'areaCode' => $transaction->customer->phone->area_code,
+                            'number'   => $transaction->customer->phone->phone,
+                        ],
+                        'address'  => [
+                            'postalCode' => $transaction->customer->address->postal_code,
+                            'street'     => $transaction->customer->address->street,
+                            'number'     => $transaction->customer->address->number,
+                            'complement' => $transaction->customer->address->complement,
+                            'district'   => $transaction->customer->address->district,
+                            'city'       => $transaction->customer->address->city,
+                            'state'      => $transaction->customer->address->state,
+                        ],
+                    ],
+                ],
+            ]);
 
-        $request->setReference($transaction->id);
+        $result = json_decode((string) $response->getBody(), TRUE);
 
-        $request->setReceiverEmail(config('pagseguro.email'));
+        if (!$this->repository->setCode($transaction, $result['boletos'][0]['code']))
+            \Log::error('Not possible to set the code in the transaction.['.$transaction->id.' => '.$result['boletos'][0]['code'].']');
 
-        $request->setShipping()->setAddressRequired()->withParameters(FALSE);
+        if (!$this->repository->updateBoleto($transaction, $result['boletos'][0]['paymentLink'], $result['boletos'][0]['barcode'])) {
+            \Log::error('Not possible to set the boleto in the transaction.['.$transaction->id.' => '.$result['boletos'][0]['paymentLink'] .','.
+                       $result['boletos'][0]['barcode'].']');
+        }
 
-        foreach ($transaction->items as $item)
-            $request->addItems()->withParameters(
-                $item->item_id,
-                $item->description,
-                $item->quantity,
-                $item->amount / 100.0
-            );
-
-        $request->setExtraAmount(number_format(0, 2));
-
-        $request->setSender()->setName($transaction->costumer->name)
-            ->setEmail($transaction->costumer->email);
-        $request->setSender()->setIp($transaction->ip);
-        $request->setSender()->setHash($transaction->hash);
-
-        $request->setSender()->setDocument()->withParameters('CPF', $transaction->costumer->document);
-        $request->setSender()->setPhone()->withParameters($transaction->costumer->phone->area_code, $transaction->costumer->phone->phone);
-
-        return $request;
+        return $transaction;
     }
 
     /**
-     * @param \Modules\Transaction\Models\Transaction $transaction
+     * @param  \Modules\Transaction\Models\Transaction  $transaction
      *
-     * @return \PagSeguro\Domains\Requests\DirectPayment\CreditCard
+     * @return \Modules\Transaction\Models\Transaction
+     * @throws \Exception
      */
     private function createCreditCard(Transaction $transaction)
     {
@@ -131,13 +171,13 @@ class TransactionService
 
         $request->setExtraAmount(number_format(0, 2));
 
-        $request->setSender()->setName($transaction->costumer->name)
-            ->setEmail($transaction->costumer->email);
+        $request->setSender()->setName($transaction->customer->name)
+            ->setEmail($transaction->customer->email);
         $request->setSender()->setIp($transaction->ip);
         $request->setSender()->setHash($transaction->hash);
 
-        $request->setSender()->setDocument()->withParameters('CPF', $transaction->costumer->document);
-        $request->setSender()->setPhone()->withParameters($transaction->costumer->phone->area_code, $transaction->costumer->phone->phone);
+        $request->setSender()->setDocument()->withParameters('CPF', $transaction->customer->document);
+        $request->setSender()->setPhone()->withParameters($transaction->customer->phone->area_code, $transaction->customer->phone->phone);
 
         $request->setBilling()->setAddress()->withParameters(
             $transaction->payment_method->card->holder->address->street,
@@ -160,6 +200,11 @@ class TransactionService
 
         $request->setToken($transaction->payment_method->card->token);
 
-        return $request;
+        $response = $request->register(Configure::getApplicationCredentials());
+
+        if (!$this->repository->setCode($transaction, $response->getCode()))
+            \Log::error('Not possible to set the code in the transaction.['.$transaction->id.' => '.$response->getCode().']');
+
+        return $transaction;
     }
 }
