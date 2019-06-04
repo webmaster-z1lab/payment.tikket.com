@@ -58,7 +58,7 @@ class NotificationController extends Controller
      */
     protected function transaction()
     {
-        $response = TransactionNotification::check(Configure::getApplicationCredentials());
+        $response = TransactionNotification::check(Configure::getAccountCredentials());
 
         switch ($response->getStatus()) {
             case 1:

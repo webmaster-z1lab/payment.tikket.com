@@ -21,7 +21,7 @@ class SessionController extends Controller
      */
     public function get()
     {
-        $response = Session::create(Configure::getApplicationCredentials());
+        $response = Session::create(Configure::getAccountCredentials());
 
         return response()->json(['session' => $response->getResult()]);
     }

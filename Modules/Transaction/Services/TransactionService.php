@@ -9,6 +9,7 @@
 namespace Modules\Transaction\Services;
 
 use GuzzleHttp\Client;
+use Illuminate\Support\Str;
 use Modules\Transaction\Models\Transaction;
 use Modules\Transaction\Repositories\TransactionRepository;
 use PagSeguro\Configuration\Configure;
@@ -23,6 +24,8 @@ class TransactionService
      */
     private $repository;
 
+    protected $notication_url;
+
     /**
      * TransactionService constructor.
      *
@@ -31,10 +34,11 @@ class TransactionService
     public function __construct(TransactionRepository $repository)
     {
         $this->repository = $repository;
+        $this->notication_url = Str::finish(config('app.url'), '/').'api/notifications';
     }
 
     /**
-     * @param \Modules\Transaction\Models\Transaction $transaction
+     * @param  \Modules\Transaction\Models\Transaction  $transaction
      *
      * @return \Modules\Transaction\Models\Transaction|null
      * @throws \Exception
@@ -48,30 +52,31 @@ class TransactionService
                 return $this->createCreditCard($transaction);
             default:
                 abort(400, 'Payment method unknown.');
+
                 return NULL;
         }
     }
 
     /**
-     * @param string $code
+     * @param  string  $code
      *
      * @return \PagSeguro\Parsers\Cancel\Response
      * @throws \Exception
      */
     public function cancel(string $code)
     {
-        return Cancel::create(Configure::getApplicationCredentials(), $code);
+        return Cancel::create(Configure::getAccountCredentials(), $code);
     }
 
     /**
-     * @param string $code
+     * @param  string  $code
      *
      * @return string
      * @throws \Exception
      */
     public function reverse(string $code)
     {
-        return Refund::create(Configure::getApplicationCredentials(), $code);
+        return Refund::create(Configure::getAccountCredentials(), $code);
     }
 
     /**
@@ -82,7 +87,7 @@ class TransactionService
     private function createBoleto(Transaction $transaction)
     {
 //        if (Configure::getEnvironment()->getEnvironment() === 'production') {
-            $url = 'https://ws.pagseguro.uol.com.br/';
+        $url = 'https://ws.pagseguro.uol.com.br/';
 //        } else {
 //            $url = 'https://ws.sandbox.pagseguro.uol.com.br/';
 //        }
@@ -90,7 +95,7 @@ class TransactionService
         $client = new Client([
             'base_uri' => $url,
             'headers'  => ['Content-Type' => 'application/json;charset=ISO-8859-1', 'Accept' => 'application/json;charset=ISO-8859-1'],
-            'query'    => ['appID' => Configure::getApplicationCredentials()->getAppId(), 'appKey' => Configure::getApplicationCredentials()->getAppKey()],
+            'query'    => ['email' => Configure::getAccountCredentials()->getEmail(), 'token' => Configure::getAccountCredentials()->getToken()],
         ]);
 
         $response = $client->post('recurring-payment/boletos',
@@ -124,17 +129,19 @@ class TransactionService
                             'state'      => $transaction->customer->address->state,
                         ],
                     ],
+                    'notificationURL'  => $this->notication_url,
                 ],
             ]);
 
         $result = json_decode((string) $response->getBody(), TRUE);
 
-        if (!$this->repository->setCode($transaction, $result['boletos'][0]['code']))
+        if (!$this->repository->setCode($transaction, $result['boletos'][0]['code'])) {
             \Log::error('Not possible to set the code in the transaction.['.$transaction->id.' => '.$result['boletos'][0]['code'].']');
+        }
 
         if (!$this->repository->updateBoleto($transaction, $result['boletos'][0]['paymentLink'], $result['boletos'][0]['barcode'])) {
-            \Log::error('Not possible to set the boleto in the transaction.['.$transaction->id.' => '.$result['boletos'][0]['paymentLink'] .','.
-                       $result['boletos'][0]['barcode'].']');
+            \Log::error('Not possible to set the boleto in the transaction.['.$transaction->id.' => '.$result['boletos'][0]['paymentLink'].','.
+                        $result['boletos'][0]['barcode'].']');
         }
 
         return $transaction;
@@ -200,10 +207,13 @@ class TransactionService
 
         $request->setToken($transaction->payment_method->card->token);
 
-        $response = $request->register(Configure::getApplicationCredentials());
+        $request->setNotificationUrl($this->notication_url);
 
-        if (!$this->repository->setCode($transaction, $response->getCode()))
+        $response = $request->register(Configure::getAccountCredentials());
+
+        if (!$this->repository->setCode($transaction, $response->getCode())) {
             \Log::error('Not possible to set the code in the transaction.['.$transaction->id.' => '.$response->getCode().']');
+        }
 
         return $transaction;
     }
