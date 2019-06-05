@@ -8,7 +8,7 @@ class Boleto extends Model
 {
     public $timestamps = FALSE;
 
-    protected $fillable = ['url', 'due_date', 'barcode'];
+    protected $fillable = ['url', 'due_date', 'barcode', 'description'];
 
     protected $dates = ['due_date'];
 }

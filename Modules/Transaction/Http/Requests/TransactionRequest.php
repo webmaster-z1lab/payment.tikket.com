@@ -52,7 +52,8 @@ class TransactionRequest extends ApiFormRequest
             'items.*.quantity'    => 'bail|required|integer|min:1',
             'items.*.amount'      => 'bail|required|integer|min:1',
 
-            'type' => 'bail|required|string|in:boleto,credit_card',
+            'type'        => 'bail|required|string|in:boleto,credit_card',
+            'description' => 'bail|required_if:type,boleto|string|max:100',
 
             'card'                            => 'bail|required_if:type,credit_card|array',
             'card.brand'                      => 'bail|required_if:type,credit_card|string',

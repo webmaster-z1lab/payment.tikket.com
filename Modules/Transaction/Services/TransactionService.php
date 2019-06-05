@@ -106,7 +106,7 @@ class TransactionService
                     'numberOfPayments' => 1,
                     'periodicity'      => 'monthly',
                     'instructions'     => 'Não receber após o vencimento.',
-                    'description'      => 'teste 2',
+                    'description'      => $transaction->payment_method->boleto->description,
                     'amount'           => number_format($transaction->amount / 100.0, 2),
                     'customer'         => [
                         'document' => [

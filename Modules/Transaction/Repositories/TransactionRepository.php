@@ -49,8 +49,9 @@ class TransactionRepository extends ApiRepository
 
         $method = $transaction->payment_method()->create(['type' => $data['type']]);
         if ($data['type'] === 'boleto') {
+            $description = $data['description'];
             $due_date = $this->service->nextWorkingDay(today());
-            $method->boleto()->create(compact('due_date'));
+            $method->boleto()->create(compact('due_date', 'description'));
         } else {
             $this->createCard($transaction, $data['card']);
         }

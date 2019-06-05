@@ -17,10 +17,11 @@ class Boleto extends Resource
     public function toArray($request)
     {
         return [
-            'id'       => $this->id,
-            'url'      => $this->url,
-            'due_date' => $this->due_date->toW3cString(),
-            'barcode'  => $this->barcode,
+            'id'          => $this->id,
+            'url'         => $this->url,
+            'due_date'    => $this->due_date->toW3cString(),
+            'barcode'     => $this->barcode,
+            'description' => $this->description,
         ];
     }
 }
