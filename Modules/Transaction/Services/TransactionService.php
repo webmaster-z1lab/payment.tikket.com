@@ -34,7 +34,8 @@ class TransactionService
     public function __construct(TransactionRepository $repository)
     {
         $this->repository = $repository;
-        $this->notication_url = Str::finish(config('app.url'), '/').'api/notifications';
+        //$this->notication_url = Str::finish(config('app.url'), '/').'api/notifications';
+        $this->notication_url = 'https://tikket.com.br/api/notifications';
     }
 
     /**
