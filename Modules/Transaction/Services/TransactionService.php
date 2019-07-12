@@ -87,11 +87,7 @@ class TransactionService
      */
     private function createBoleto(Transaction $transaction)
     {
-//        if (Configure::getEnvironment()->getEnvironment() === 'production') {
         $url = 'https://ws.pagseguro.uol.com.br/';
-//        } else {
-//            $url = 'https://ws.sandbox.pagseguro.uol.com.br/';
-//        }
 
         $client = new Client([
             'base_uri' => $url,
@@ -106,7 +102,7 @@ class TransactionService
                     'firstDueDate'     => $transaction->payment_method->boleto->due_date->format('Y-m-d'),
                     'numberOfPayments' => 1,
                     'periodicity'      => 'monthly',
-                    'instructions'     => 'Não receber após o vencimento.',
+                    'instructions'     => $transaction->payment_method->boleto->description,
                     'description'      => $transaction->payment_method->boleto->description,
                     'amount'           => number_format($transaction->amount / 100.0, 2),
                     'customer'         => [
