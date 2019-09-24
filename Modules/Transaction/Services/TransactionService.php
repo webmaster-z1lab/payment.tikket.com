@@ -200,7 +200,7 @@ class TransactionService
         $request->setHolder()->setPhone()->withParameters($transaction->payment_method->card->holder->phone->area_code, $transaction->payment_method->card->holder->phone->phone);
 
         $request->setInstallment()->withParameters($transaction->payment_method->card->installments,
-            number_format($transaction->payment_method->card->parcel / 100.0, 2));
+            number_format($transaction->payment_method->card->parcel / 100.0, 2, '.', ''));
 
         $request->setToken($transaction->payment_method->card->token);
 
